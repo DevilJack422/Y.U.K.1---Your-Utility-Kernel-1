@@ -1,0 +1,34 @@
+# Build results & .NET artifacts
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+*.cache
+
+# Visual Studio / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Local AI models & heavy weights (never commit to Git)
+*.gguf
+*.bin
+*.safetensors
+*.onnx
+models/
+
+# Local environment overrides
+appsettings.Development.json
+appsettings.Local.json
+
+# Internal project tracking logs (excluded from Open-Source repo)
+PROGRESS_LOG.md
+TEST_REPORT.log
+
+# Windows OS junk
+Thumbs.db
+Desktop.ini
