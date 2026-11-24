@@ -27,6 +27,7 @@ appsettings.Local.json
 
 # Internal project tracking logs (excluded from Open-Source repo)
 PROGRESS_LOG.md
+PROJECT_PLAN.md
 TEST_REPORT.log
 
 # Windows OS junk
