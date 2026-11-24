@@ -1,69 +1,51 @@
-using System.Runtime.InteropServices;
-using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
+using NHotkey;
+using NHotkey.Wpf;
 
 namespace YUK1.Services;
 
 /// <summary>
-/// Register global hotkey throught Win32 API
+/// Register global hotkey by NHotkey.Wpf library
 /// </summary>
 public class HotkeyService
 {
-    private const int WnHotkey = 0x0312;
-    private const int HotkeyId = 9001;
-
-    private const uint ModAlt = 0x0001;
-    private const uint ModControl = 0x0002;
-    private const uint ModShift = 0x0004;
-    private const uint ModWin = 0x0008;
-    private const uint ModNoRepeat = 0x4000;
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(nint hWnd, int id, uint fsModifiers, uint vk);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool UnregisterHotKey(nint hWnd, int id);
-
-    private HwndSource? _hwndSource;
-    private nint _windowHandle;
-    private bool _isRegistered;
+    private const string HotkeyName = "YUK1_ToggleWindow";
     private bool _disposed;
 
     public event Action? HotkeyPressed;
 
     /// <summary>
     /// Register hotkey using the config string in appsetting.json
+    /// Return false if key is being holded by other apps
     /// </summary>
-    public bool Register(Window window, string hotkeyConfig)
+    public bool Register(string hotkeyConfig)
     {
         var (modifiers, key) = ParseHotkey(hotkeyConfig);
-        uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
 
-        _windowHandle = new WindowInteropHelper(window).EnsureHandle();
-        _hwndSource = HwndSource.FromHwnd(_windowHandle);
-        _hwndSource?.AddHook(WndProc);
-
-        _isRegistered = RegisterHotKey(_windowHandle, HotkeyId, modifiers | ModNoRepeat, vk);
-        return _isRegistered;
-    }
-
-    private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
-    {
-        if (msg == WnHotkey && wParam.ToInt32() == HotkeyId)
+        try
         {
-            HotkeyPressed?.Invoke();
-            handled = true;
+            HotkeyManager.Current.AddOrReplace(HotkeyName, key, modifiers, OnHotkeyPressed);
+            return true;
         }
-        return nint.Zero;
+        catch (HotkeyAlreadyRegisteredException)
+        {
+            return false;
+        }
     }
 
-    private static (uint Modifiers, Key key) ParseHotkey(string hotkeyConfig)
+    private void OnHotkeyPressed(object? sender, HotkeyEventArgs e)
     {
-        uint modifiers = 0;
-        Key key = Key.Space;
+        e.Handled = true;
+        HotkeyPressed?.Invoke();
+    }
 
-        if (string.IsNullOrWhiteSpace(hotkeyConfig)) return (ModAlt, Key.Space);
+    private static (ModifierKeys Modifiers, Key Key) ParseHotkey(string hotkeyConfig)
+    {
+        var modifiers = ModifierKeys.None;
+        var key = Key.Space;
+
+        if (string.IsNullOrWhiteSpace(hotkeyConfig))
+            return (ModifierKeys.Alt, Key.Space);
 
         var parts = hotkeyConfig.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var part in parts)
@@ -71,21 +53,21 @@ public class HotkeyService
             switch (part.ToUpperInvariant())
             {
                 case "ALT":
-                    modifiers |= ModAlt;
+                    modifiers |= ModifierKeys.Alt;
                     break;
 
                 case "CTRL":
 
                 case "CONTROL":
-                    modifiers |= ModControl;
+                    modifiers |= ModifierKeys.Control;
                     break;
 
                 case "SHIFT":
-                    modifiers |= ModShift;
+                    modifiers |= ModifierKeys.Shift;
                     break;
 
                 case "WIN":
-                    modifiers |= ModWin;
+                    modifiers |= ModifierKeys.Windows;
                     break;
 
                 default:
@@ -95,7 +77,7 @@ public class HotkeyService
             }
         }
 
-        return (modifiers == 0 ? ModAlt : modifiers, key);
+        return (modifiers == ModifierKeys.None ? ModifierKeys.Alt : modifiers, key);
     }
 
     public void Dispose()
@@ -103,13 +85,6 @@ public class HotkeyService
         if (_disposed) return;
         _disposed = true;
 
-        if (_isRegistered && _windowHandle != nint.Zero)
-        {
-            UnregisterHotKey(_windowHandle, HotkeyId);
-            _isRegistered = false;
-        }
-
-        _hwndSource?.RemoveHook(WndProc);
-        _hwndSource = null;
+        HotkeyManager.Current.Remove(HotkeyName);
     }
 }
