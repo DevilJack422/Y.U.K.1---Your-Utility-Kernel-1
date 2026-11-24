@@ -7,7 +7,7 @@ namespace YUK1.Services;
 /// <summary>
 /// Register global hotkey by NHotkey.Wpf library
 /// </summary>
-public class HotkeyService
+public class HotkeyService : IDisposable
 {
     private const string HotkeyName = "YUK1_ToggleWindow";
     private bool _disposed;
