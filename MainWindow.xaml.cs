@@ -22,6 +22,12 @@ public partial class MainWindow : Window
 {
     private readonly AppSettings _settings;
     private readonly HotkeyService _hotkeyService;
+    private readonly SystemMonitorService _monitorService;
+
+    private static readonly SolidColorBrush CpuNormalBrush = new((Color)ColorConverter.ConvertFromString("#58A6FF"));
+    private static readonly SolidColorBrush RamNormalBrush = new((Color)ColorConverter.ConvertFromString("#3FB950"));
+    private static readonly SolidColorBrush WarningBrush = new((Color)ColorConverter.ConvertFromString("#F85149"));
+
     private bool _isExisting;
 
     public MainWindow()
@@ -41,6 +47,21 @@ public partial class MainWindow : Window
         {
             ModelStatusText.Text = $"{_settings.Ollama.Model} (Hotkeys are occuppied)";
         }
+
+        _monitorService = new SystemMonitorService(_settings.SystemMonitor.PollIntervalMs);
+        _monitorService.MetricsUpdated += OnMetricsUpdated;
+        _monitorService.Start();
+    }
+
+    private void OnMetricsUpdated(SystemMetrics metrics)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            CpuText.Text = $"{metrics.CpuPercent:0}%";
+            CpuText.Foreground = metrics.RamPercent >= _settings.SystemMonitor.RamWarningThresholdPercent ? WarningBrush : RamNormalBrush;
+
+            NetText.Text = metrics.NetworkKbPerSec >= 1024 ? $"{metrics.NetworkKbPerSec / 1024.0:0.0} MB/s" : $"{metrics.NetworkKbPerSec:0.0} KB/s";
+        });
     }
 
     private void ToggleWindow()
@@ -80,6 +101,7 @@ public partial class MainWindow : Window
         _isExisting = true;
         _hotkeyService.Dispose();
         TrayIcon.Dispose();
+        _monitorService.Dispose();
         Application.Current.Shutdown();
     }
 
