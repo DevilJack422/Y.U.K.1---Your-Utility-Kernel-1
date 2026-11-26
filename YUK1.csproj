@@ -14,12 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="11.0.0" />
     <PackageReference Include="NHotkey.Wpf" Version="4.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="11.0.0" />
   </ItemGroup>
 
 </Project>
