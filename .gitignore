@@ -19,7 +19,6 @@ publish/
 *.bin
 *.safetensors
 *.onnx
-models/
 
 # Local environment overrides
 appsettings.Development.json
